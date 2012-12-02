@@ -20,7 +20,7 @@ bot.on('loggedOn', function(result) {
 });
 
 bot.on('chatInvite', function(chatRoomID, chatRoomName, patronID) {
-  console.log('Got an invite to ' + chatRoomName + ' from ' + bot.getFriendPersonaName(patronID));
+  console.log('Got an invite to ' + chatRoomName + ' from ' + bot.users[patronID].playerName);
   bot.joinChat(chatRoomID);
 });
 
@@ -50,9 +50,9 @@ bot.on('webLoggedOn', function(sessionId, token) {
     scrap = [];
     weapons = 0;
     addedScrap = [];
-    client = otherClient;
+    client = otherClient.toString();
     
-    console.log('trading ' + bot.getFriendPersonaName(client));
+    console.log('trading ' + bot.users[client].playerName);
     steamTrade.open(otherClient);
     steamTrade.loadInventory(440, 2, function(inv) {
       inventory = inv;
