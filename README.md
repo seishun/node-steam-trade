@@ -3,13 +3,13 @@
 Allows you to automate Steam trading in Node.js.
 
 # Usage
-Instantiate a SteamTrade object using the sessionID and token returned from Steam after a successful web authentication. You can use [node-steam](https://github.com/seishun/node-steam)'s `webLoggedOn` event to get them.
+Instantiate a SteamTrade object without arguments, then use methods documented below.
 
 Do not make multiple method calls at once (e.g. `addItem(derp); addItem(herp);`) - instead, make the second call in the callback provided to the first one (`addItem(derp, function() {addItem(herp);});`). The callback will be passed the raw JSON response object from Steam, in case you want it for some reason.
 
 ```js
 var SteamTrade = require('./'); // if running from the same directory
-var steamTrade = new SteamTrade('sessionID', 'token');
+var steamTrade = new SteamTrade();
 ```
 
 This is very beta and might break in the most unexpected ways. Bug reports and feedback are much appreciated.
@@ -18,8 +18,11 @@ See scrapbank.js for an even more beta scrapbank bot implementation (`npm instal
 
 # Methods
 
-## open(steamID)
-Initializes a trade with the specified SteamID. The trade handshake must have completed at this point - in node-steam, listen for a `sessionStarted` event. Don't use any other methods until you've opened a trade.
+## set(sessionID, token)
+Initializes the SteamTrade object with the session ID and token returned from Steam after a successful web authentication. You can use [node-steam](https://github.com/seishun/node-steam)'s `webLoggedOn` event to get them. Don't use any other methods before this. You should call it with the new values whenever you reconnect to Steam.
+
+## open(steamID, callback)
+Initializes a trade with the specified SteamID. The trade handshake must have completed at this point - in node-steam, listen for a `sessionStarted` event. Don't use any other methods (except `set`) until you've opened a trade. Use `callback` if you want to add some items immediately after opening the trade.
 
 ## loadInventory(appid, contextid, callback)
 Loads your library for the given app and context, then calls `callback` with the inventory object. TODO: provide a list of available appids and contexids. For example, use 440 and 2 for TF2 and 570 and 2 for Dota2.
@@ -42,15 +45,15 @@ Presses the big green "Make Trade" button. Will silently fail if either side is 
 
 # Events
 
-## 'complete'
-Trade finished successfully.
+## 'end'
+* 'complete', 'cancelled', 'timeout' or 'failed' 
+* in case of 'complete', an array of items you received
 
-## 'cancelled', 'timeout', 'failed'
-Trade finished unsuccessfully.
+Trade is closed. 
 
 ## 'offerChanged'
-* `added` - `true` if item added, `false` if removed
-* `item` - the item object
+* `true` if an item was added, `false` if removed
+* the item object
 
 ## 'ready'
 The other side has pressed the big blue "ready" button.

@@ -1,12 +1,15 @@
-function SteamTrade(sessionID, token) {
-  require('events').EventEmitter.call(this);
-  
-  this._sessionID = sessionID;
-  this._cookie = require('util').format('sessionid=%s; steamLogin=%s', sessionID, token);
-}
+module.exports = SteamTrade;
 
 require('util').inherits(SteamTrade, require('events').EventEmitter);
 
+function SteamTrade() {
+  require('events').EventEmitter.call(this);
+}
+
+SteamTrade.prototype.set = function(sessionID, token) {
+  this._sessionID = sessionID;
+  this._cookie = require('util').format('sessionid=%s; steamLogin=%s', sessionID, token);
+};
 
 SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
   return function(res) {
@@ -25,20 +28,33 @@ SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
     
     this._loadingInventoryData = false;
   }.bind(this);
-;
+};
 
 SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
   return function(res) {
-//    console.log(res.body);
+    
     if (res.body.trade_status !== 0) {
-      this.emit({
-        1: 'complete',
-        3: 'cancelled',
-        4: 'timeout',
-        5: 'failed'
-      }[res.body.trade_status]);
       
-      clearInterval(this._timerTradePoll);
+      if (res.body.trade_status == 1) {
+        require('superagent')
+          .get('http://steamcommunity.com/trade/' + res.body.tradeid + '/receipt/')
+          .set('Cookie', this._cookie)
+          .end(function(res) {
+            this.emit('end', 'complete', (res.text
+              .match(/oItem = [\s\S]+?amount = \d+;\r\n\toItem/g) || [])
+              .map(eval)
+            );
+          }.bind(this));
+      
+      } else {
+        this.emit('end', {
+          3: 'cancelled',
+          4: 'timeout',
+          5: 'failed'
+        }[res.body.trade_status]);
+      }
+      
+      clearTimeout(this._timerTradePoll);
       return;
     }
     
@@ -121,22 +137,29 @@ SteamTrade.prototype._send = function(action, data, handler) {
     })
     .send(data)
     .end(handler);
+  
+  clearTimeout(this._timerTradePoll);
+  this._timerTradePoll = setTimeout(function() {
+    this._send('tradestatus', {
+      logpos: this._nextLogPos,
+      version: this._version
+    }, this._onTradeStatusUpdate());
+  }.bind(this), 1000);
 };
 
 
-SteamTrade.prototype.open = function(steamID) {
+SteamTrade.prototype.open = function(steamID, callback) {
   this._tradePartnerSteamID = steamID;
   this._themInventories = {};
   this._themAssets = [];
   this._meAssets = [];
   this._nextLogPos = 0;
   this._version = 1;
-  this._timerTradePoll = setInterval(function() {
-    this._send('tradestatus', {
-      logpos: this._nextLogPos,
-      version: this._version
-    }, this._onTradeStatusUpdate());
-  }.bind(this), 1000);
+  
+  this._send('tradestatus', {
+    logpos: this._nextLogPos,
+    version: this._version
+  }, this._onTradeStatusUpdate(callback));
 };
 
 SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
@@ -212,6 +235,3 @@ SteamTrade.prototype.confirm = function(callback) {
     }
   }.bind(this)));
 };
-
-
-module.exports = SteamTrade;
