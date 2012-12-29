@@ -25,7 +25,7 @@ SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
     
     this._loadingInventoryData = false;
   }.bind(this);
-};
+;
 
 SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
   return function(res) {
