@@ -219,6 +219,13 @@ SteamTrade.prototype.ready = function(callback) {
   }, this._onTradeStatusUpdate(callback));
 };
 
+SteamTrade.prototype.unready = function(callback) {
+  this._send('toggleready', {
+    version: this._version,
+    ready: false
+  }, this._onTradeStatusUpdate(callback));
+};
+
 SteamTrade.prototype.confirm = function(callback) {
   this._send('confirm', {
     logpos: this._nextLogPos,
