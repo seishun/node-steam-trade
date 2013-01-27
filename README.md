@@ -2,19 +2,23 @@
 
 Allows you to automate Steam trading in Node.js.
 
+# Installation
+
+```
+npm install git://github.com/seishun/node-steam-trade.git
+```
+
 # Usage
 Instantiate a SteamTrade object, then set its `sessionID` and `cookie` properties. You can use [node-steam](https://github.com/seishun/node-steam)'s `webSessionID` event and `webLogOn` method respectively to get them.
 
 Do not make multiple method calls at once (e.g. `addItem(derp); addItem(herp);`) - instead, make the second call in the callback provided to the first one (`addItem(derp, function() {addItem(herp);});`). The callback will be passed the raw JSON response object from Steam, in case you want it for some reason.
 
 ```js
-var SteamTrade = require('./'); // if running from the same directory
+var SteamTrade = require('steam-trade');
 var steamTrade = new SteamTrade();
 ```
 
-This is very beta and might break in the most unexpected ways. Bug reports and feedback are much appreciated.
-
-See scrapbank.js for an even more beta scrapbank bot implementation (`npm install steam` to use).
+See scrapbank.js for a scrapbank bot implementation (`npm install steam` to use).
 
 # Methods
 
