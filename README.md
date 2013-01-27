@@ -3,7 +3,7 @@
 Allows you to automate Steam trading in Node.js.
 
 # Usage
-Instantiate a SteamTrade object without arguments, then use methods documented below.
+Instantiate a SteamTrade object, then set its `sessionID` and `cookie` properties. You can use [node-steam](https://github.com/seishun/node-steam)'s `webSessionID` event and `webLogOn` method respectively to get them.
 
 Do not make multiple method calls at once (e.g. `addItem(derp); addItem(herp);`) - instead, make the second call in the callback provided to the first one (`addItem(derp, function() {addItem(herp);});`). The callback will be passed the raw JSON response object from Steam, in case you want it for some reason.
 
@@ -18,11 +18,8 @@ See scrapbank.js for an even more beta scrapbank bot implementation (`npm instal
 
 # Methods
 
-## set(sessionID, token)
-Initializes the SteamTrade object with the session ID and token returned from Steam after a successful web authentication. You can use [node-steam](https://github.com/seishun/node-steam)'s `webLoggedOn` event to get them. Don't use any other methods before this. You should call it with the new values whenever you reconnect to Steam.
-
 ## open(steamID, callback)
-Initializes a trade with the specified SteamID. The trade handshake must have completed at this point - in node-steam, listen for a `sessionStarted` event. Don't use any other methods (except `set`) until you've opened a trade. Use `callback` if you want to add some items immediately after opening the trade.
+Initializes a trade with the specified SteamID. The trade handshake must have completed at this point - in node-steam, listen for a `sessionStarted` event. Don't use any other methods until you've opened a trade. Use `callback` if you want to add some items immediately after opening the trade.
 
 ## loadInventory(appid, contextid, callback)
 Loads your library for the given app and context, then calls `callback` with the inventory object. TODO: provide a list of available appids and contexids. For example, use 440 and 2 for TF2 and 570 and 2 for Dota2.
@@ -39,11 +36,19 @@ Same arguments as above.
 ## ready([callback])
 Presses the big blue "ready" button. Again, use the callback if you want to confirm as well.
 
+## unready([callback])
+Unpresses the "ready" button.
+
 ## confirm([callback])
 Presses the big green "Make Trade" button. Will silently fail if either side is not ready.
 
 
 # Events
+
+## 'error'
+* `e` - an `Error` object
+
+Your cookie has expired - possibly because you logged into this account from a browser on another computer. Refresh your web session (`webLogOn` in node-steam), set the `cookie` property, then call `e.cont()` to continue.
 
 ## 'end'
 * 'complete', 'cancelled', 'timeout' or 'failed' 
