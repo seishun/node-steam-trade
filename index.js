@@ -6,11 +6,6 @@ function SteamTrade() {
   require('events').EventEmitter.call(this);
 }
 
-SteamTrade.prototype.set = function(sessionID, token) {
-  this._sessionID = sessionID;
-  this._cookie = require('util').format('sessionid=%s; steamLogin=%s', sessionID, token);
-};
-
 SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
   return function(res) {
     for (var id in res.body.rgInventory) {
@@ -32,13 +27,20 @@ SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
 
 SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
   return function(res) {
+    clearTimeout(this._timerTradePoll);
+    
+    if (!res.body.success) {
+      this.emit('debug', 'trade fail');
+      callback(res.body);
+      return;
+    }
     
     if (res.body.trade_status !== 0) {
       
       if (res.body.trade_status == 1) {
         require('superagent')
           .get('http://steamcommunity.com/trade/' + res.body.tradeid + '/receipt/')
-          .set('Cookie', this._cookie)
+          .set('Cookie', this.cookie)
           .end(function(res) {
             this.emit('end', 'complete', (res.text
               .match(/oItem = [\s\S]+?amount = \d+;\r\n\toItem/g) || [])
@@ -54,21 +56,27 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
         }[res.body.trade_status]);
       }
       
-      clearTimeout(this._timerTradePoll);
       return;
     }
+    
+    this._timerTradePoll = setTimeout(function() {
+      this._send('tradestatus', {
+        logpos: this._nextLogPos,
+        version: this._version
+      });
+    }.bind(this), 1000);
     
     if (res.body.newversion)
       // we can update our own assets safely
       this._meAssets = res.body.me.assets;
     
-    if (callback)
-      // callback now, otherwise we might return (loading inventory) and never get there
-      callback(res.body);
+    // callback now, otherwise we might return (loading inventory) and never get there
+    callback(res.body);
     
-    if (this._loadingInventoryData)
+    if (this._loadingInventoryData) {
       // we'll receive the same events again
       return;
+    }
     
     var ready = false;
     
@@ -85,14 +93,25 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
       switch (event.action) {
         case '0':
         case '1':
-          // item added or removed
           var inventory = this._themInventories[event.appid] && this._themInventories[event.appid][event.contextid];
           if (!inventory) {
-            this._send('foreigninventory', {
-              steamid: this._tradePartnerSteamID,
-              appid: event.appid,
-              contextid: event.contextid
-            }, this._onLoadInventory(event.appid, event.contextid));
+            require('superagent')
+              .post('http://steamcommunity.com/trade/' + this._tradePartnerSteamID + '/foreigninventory')
+              .set('Cookie', this.cookie)
+              .set('Referer', 'http://steamcommunity.com/trade/1')
+              .type('form')
+              .on('error', function(error) {
+                self.emit('debug', error);
+                // retry on next status update
+                this._loadingInventoryData = false;
+              })
+              .send({
+                sessionid: this.sessionID,
+                steamid: this._tradePartnerSteamID,
+                appid: event.appid,
+                contextid: event.contextid
+              })
+              .end(this._onLoadInventory(event.appid, event.contextid));
             this._loadingInventoryData = true;
             return;
           }
@@ -126,25 +145,36 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
   }.bind(this);
 };
 
-SteamTrade.prototype._send = function(action, data, handler) {
+SteamTrade.prototype._send = function(action, data, callback) {
+  clearTimeout(this._timerTradePoll);
+  
+  var self = this;
+  
   require('superagent')
     .post('http://steamcommunity.com/trade/' + this._tradePartnerSteamID + '/' + action)
-    .set('Cookie', this._cookie)
+    .set('Cookie', this.cookie)
     .set('Referer', 'http://steamcommunity.com/trade/1')
     .type('form')
     .send({
-      sessionid: this._sessionID
+      sessionid: this.sessionID
     })
     .send(data)
-    .end(handler);
-  
-  clearTimeout(this._timerTradePoll);
-  this._timerTradePoll = setTimeout(function() {
-    this._send('tradestatus', {
-      logpos: this._nextLogPos,
-      version: this._version
-    }, this._onTradeStatusUpdate());
-  }.bind(this), 1000);
+    .on('error', function(error) {
+      self.emit('debug', error);
+      self._send(action, data, callback);
+    })
+    .end(this._onTradeStatusUpdate(function(res) {
+      if (!res.success) {
+        var err = new Error('Invalid cookie');
+        err.cont = function() {
+          self._send(action, data, callback);
+        }
+        self.emit('error', err);
+        
+      } else if (callback) {
+        callback(res);
+      }
+    }));  
 };
 
 
@@ -159,15 +189,18 @@ SteamTrade.prototype.open = function(steamID, callback) {
   this._send('tradestatus', {
     logpos: this._nextLogPos,
     version: this._version
-  }, this._onTradeStatusUpdate(callback));
+  }, callback);
 };
 
 SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
   require('superagent')
     .get('http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid)
-    .set('Cookie', this._cookie)
+    .set('Cookie', this.cookie)
+    .on('error', function(error) {
+      self.emit('debug', error);
+      self.loadInventory(appid, contextid, callback);
+    })
     .end(function(res) {
-//      console.log(res.body);
       callback(Object.keys(res.body.rgInventory).map(function(id) {
         var item = res.body.rgInventory[id];
         var description = res.body.rgDescriptions[item.classid + '_' + item.instanceid];
@@ -201,7 +234,7 @@ SteamTrade.prototype.addItem = function(item, callback, slot) {
     contextid: item.contextid,
     itemid: item.id,
     slot: slot
-  }, this._onTradeStatusUpdate(callback));
+  }, callback);
 };
 
 SteamTrade.prototype.removeItem = function(item, callback) {
@@ -209,36 +242,35 @@ SteamTrade.prototype.removeItem = function(item, callback) {
     appid: item.appid,
     contextid: item.contextid,
     itemid: item.id
-  }, this._onTradeStatusUpdate(callback));
+  }, callback);
 };
 
 SteamTrade.prototype.ready = function(callback) {
   this._send('toggleready', {
     version: this._version,
     ready: true
-  }, this._onTradeStatusUpdate(callback));
+  }, callback);
 };
 
 SteamTrade.prototype.unready = function(callback) {
   this._send('toggleready', {
     version: this._version,
     ready: false
-  }, this._onTradeStatusUpdate(callback));
+  }, callback);
 };
 
 SteamTrade.prototype.confirm = function(callback) {
   this._send('confirm', {
     logpos: this._nextLogPos,
     version: this._version
-  }, this._onTradeStatusUpdate(function(status) {
+  }, function(status) {
     // sometimes Steam is dumb and ignores the confirm for no apparent reason
     // so we'll have to resend the confirm if this one failed
     // but only if it _should_ have worked
     
     if (!status.me.confirmed && status.me.ready && status.them.ready) {
-//      console.log('Steam dumbed');
-//      console.log(status);
+      this.emit('debug', 'Steam dumbed');
       this.confirm(callback);
     }
-  }.bind(this)));
+  }.bind(this));
 };
