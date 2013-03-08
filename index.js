@@ -15,12 +15,12 @@ SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
         item[key] = description[key];
       }
     }
-    
+
     if (!this._themInventories[appid]) {
       this._themInventories[appid] = {};
     }
     this._themInventories[appid][contextid] = res.body.rgInventory;
-    
+
     this._loadingInventoryData = false;
   }.bind(this);
 };
@@ -28,15 +28,15 @@ SteamTrade.prototype._onLoadInventory = function(appid, contextid) {
 SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
   return function(res) {
     clearTimeout(this._timerTradePoll);
-    
+
     if (!res.body.success) {
       this.emit('debug', 'trade fail');
       callback(res.body);
       return;
     }
-    
+
     if (res.body.trade_status !== 0) {
-      
+
       if (res.body.trade_status == 1) {
         require('superagent')
           .get('http://steamcommunity.com/trade/' + res.body.tradeid + '/receipt/')
@@ -47,7 +47,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
               .map(eval)
             );
           }.bind(this));
-      
+
       } else {
         this.emit('end', {
           3: 'cancelled',
@@ -55,41 +55,41 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
           5: 'failed'
         }[res.body.trade_status]);
       }
-      
+
       return;
     }
-    
+
     this._timerTradePoll = setTimeout(function() {
       this._send('tradestatus', {
         logpos: this._nextLogPos,
         version: this._version
       });
     }.bind(this), 1000);
-    
+
     if (res.body.newversion)
       // we can update our own assets safely
       this._meAssets = res.body.me.assets;
-    
+
     // callback now, otherwise we might return (loading inventory) and never get there
     callback(res.body);
-    
+
     if (this._loadingInventoryData) {
       // we'll receive the same events again
       return;
     }
-    
+
     var ready = false;
-    
+
     // events might be undefined, but it's fine
     for (var i in res.body.events) {
       if (i < this._nextLogPos)
         continue;
-      
+
       var event = res.body.events[i];
-      
+
       if (event.steamid != this._tradePartnerSteamID)
         continue; // not interested in our own actions
-      
+
       switch (event.action) {
         case '0':
         case '1':
@@ -129,27 +129,27 @@ SteamTrade.prototype._onTradeStatusUpdate = function(callback) {
           this.emit('chatMsg', event.text);
       }
     }
-    
+
     if (i >= this._nextLogPos)
       this._nextLogPos = ++i;
-    
+
     if (res.body.newversion) {
       // now that we know we have all inventories, we can update their assets too
       this._themAssets = res.body.them.assets;
       this._version = res.body.version;
     }
-    
+
     if (ready)
       this.emit('ready');
-  
+
   }.bind(this);
 };
 
 SteamTrade.prototype._send = function(action, data, callback) {
   clearTimeout(this._timerTradePoll);
-  
+
   var self = this;
-  
+
   require('superagent')
     .post('http://steamcommunity.com/trade/' + this._tradePartnerSteamID + '/' + action)
     .set('Cookie', this.cookie)
@@ -170,11 +170,11 @@ SteamTrade.prototype._send = function(action, data, callback) {
           self._send(action, data, callback);
         }
         self.emit('error', err);
-        
+
       } else if (callback) {
         callback(res);
       }
-    }));  
+    }));
 };
 
 
@@ -185,7 +185,7 @@ SteamTrade.prototype.open = function(steamID, callback) {
   this._meAssets = [];
   this._nextLogPos = 0;
   this._version = 1;
-  
+
   this._send('tradestatus', {
     logpos: this._nextLogPos,
     version: this._version
@@ -228,7 +228,7 @@ SteamTrade.prototype.addItem = function(item, callback, slot) {
     else
       for (slot = 0; slot in this._meAssets; slot++);
   }
-  
+
   this._send('additem', {
     appid: item.appid,
     contextid: item.contextid,
@@ -259,6 +259,24 @@ SteamTrade.prototype.unready = function(callback) {
   }, callback);
 };
 
+SteamTrade.prototype.sendChatMessage = function(msg, callback) {
+  this._send("chat", {
+    message: msg,
+    logpos: this._nextLogPos,
+    version: this._version
+  }, function(status) {
+	  console.log(status);
+    // sometimes Steam is dumb and ignores the confirm for no apparent reason
+    // so we'll have to resend the confirm if this one failed
+    // but only if it _should_ have worked
+
+    if (!status.me.confirmed && status.me.ready && status.them.ready) {
+      this.emit('debug', 'Steam dumbed');
+      this.confirm(callback);
+    }
+  }.bind(this));
+}
+
 SteamTrade.prototype.confirm = function(callback) {
   this._send('confirm', {
     logpos: this._nextLogPos,
@@ -267,7 +285,7 @@ SteamTrade.prototype.confirm = function(callback) {
     // sometimes Steam is dumb and ignores the confirm for no apparent reason
     // so we'll have to resend the confirm if this one failed
     // but only if it _should_ have worked
-    
+
     if (!status.me.confirmed && status.me.ready && status.them.ready) {
       this.emit('debug', 'Steam dumbed');
       this.confirm(callback);
