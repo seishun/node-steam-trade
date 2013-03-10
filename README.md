@@ -46,7 +46,7 @@ Adds the specified items from your inventory. `items` must be an array. Create a
 `callback` will be called once all the items have been added. It will be provided an array of responses - one for each added item, in the same order.
 
 ## removeItem(item, [callback])
-Same arguments as above.
+Removes a single item from the trade.
 
 ## ready([callback])
 Presses the big blue "ready" button. Again, use the callback if you want to confirm as well.
