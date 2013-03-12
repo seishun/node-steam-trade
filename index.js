@@ -326,7 +326,7 @@ SteamTrade.prototype.sendMessage = function(msg, callback) {
     logpos: this._nextLogPos,
     version: this._version
   }, function(status) {
-    callback();
+    if ( typeof callback == "function" ) callback();
   }.bind(this));
 }
 
