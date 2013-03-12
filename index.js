@@ -320,13 +320,13 @@ SteamTrade.prototype.unready = function(callback) {
   }, callback);
 };
 
-SteamTrade.prototype.sendChatMessage = function(msg, callback) {
-  this._send("chat", {
+SteamTrade.prototype.sendMessage = function(msg, callback) {
+  this._send('chat', {
     message: msg,
     logpos: this._nextLogPos,
     version: this._version
   }, function(status) {
-    // No callback.
+    callback();
   }.bind(this));
 }
 
