@@ -292,7 +292,7 @@ SteamTrade.prototype.addItems = function(items, callback) {
     }, function(res) {
       results[index] = res;
       if (!--count) {
-        callback(results);
+        callback && callback(results);
       }
     });
   }.bind(this));
