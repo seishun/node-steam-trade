@@ -329,15 +329,13 @@ SteamTrade.prototype.confirm = function(callback) {
     // so we'll have to resend the confirm if this one failed
     // but only if it _should_ have worked
     
-    if (status.trade_status !== 0) {
-      // trade is over
+    if (status.trade_status === 0 && !status.me.confirmed && status.me.ready && status.them.ready) {
+//      this.emit('debug', 'Steam dumbed');
+      this.confirm(callback);
       return;
     }
     
-    if (!status.me.confirmed && status.me.ready && status.them.ready) {
-//      this.emit('debug', 'Steam dumbed');
-      this.confirm(callback);
-    }
+    callback && callback(status);
   }.bind(this));
 };
 
