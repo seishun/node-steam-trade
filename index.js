@@ -342,3 +342,11 @@ SteamTrade.prototype.confirm = function(callback) {
 SteamTrade.prototype.cancel = function(callback) {
   this._send('cancel', {}, callback);
 };
+
+SteamTrade.prototype.chatMsg = function(msg, callback) {
+  this._send('chat', {
+    message: msg,
+    logpos: this._nextLogPos,
+    version: this._version
+  }, callback);
+};
