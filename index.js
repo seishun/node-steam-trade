@@ -173,7 +173,6 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
   
   if (body.newversion) {
     // now that we know we have all inventories, we can update their assets too
-    this._themAssets = body.them.assets;
     this._version = body.version;
   }
   
@@ -220,7 +219,6 @@ SteamTrade.prototype.setCookie = function(cookie) {
 SteamTrade.prototype.open = function(steamID, callback) {
   this.tradePartnerSteamID = steamID;
   this._themInventories = {};
-  this._themAssets = [];
   this._meAssets = [];
   this._nextLogPos = 0;
   this._version = 1;
@@ -264,12 +262,6 @@ function mergeWithDescriptions(items, descriptions, contextid) {
     return item;
   });
 }
-
-SteamTrade.prototype.themAssets = function() {
-  return this._themAssets.map(function(item) {
-    return this._themInventories[item.appid][item.contextid][item.assetid];
-  }.bind(this));
-};
 
 SteamTrade.prototype.addItems = function(items, callback) {
   var count = items.length;
