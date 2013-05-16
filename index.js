@@ -56,7 +56,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
   
   var self = this;
   
-  if (body.success && body.trade_status !== 0) {
+  if (body.trade_status > 0) {
     
     if (callback) {
       // callback before emitting events
@@ -93,10 +93,10 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
       });
     } else {
       this.emit('end', {
+        2: 'empty', // happens when both parties confirm a trade with no items on either side
         3: 'cancelled',
         4: 'timeout',
         5: 'failed',
-        undefined: 'canceled'
       }[body.trade_status]);
     }
     
@@ -109,7 +109,8 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
       logpos: self._nextLogPos,
       version: self._version
     }, function(status) {
-      if (!status.success) {
+      // account for { trade_status: 2, success: false } which is not an error
+      if (!status.success && !status.trade_status) {
         // assume session lost, stop polling
         self.emit('debug', JSON.stringify(status));
         clearTimeout(self._timerTradePoll);
@@ -345,6 +346,8 @@ SteamTrade.prototype.confirm = function(callback) {
 
 SteamTrade.prototype.cancel = function(callback) {
   this._send('cancel', {}, callback);
+  // stop polling
+  delete this.tradePartnerSteamID;
 };
 
 SteamTrade.prototype.chatMsg = function(msg, callback) {
