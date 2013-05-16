@@ -118,9 +118,12 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
     });
   }, 1000);
   
-  if (body.newversion)
-    // we can update our own assets safely
+  if (body.newversion) {
+    // we need to update our assets to know where to put any next items
     this._meAssets = body.me.assets;
+    // can't ready without the latest version
+    this._version = body.version;
+  }
   
   if (callback) {
     // callback now, otherwise we might return (loading inventory) and never get there
@@ -170,11 +173,6 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
   
   if (i >= this._nextLogPos)
     this._nextLogPos = ++i;
-  
-  if (body.newversion) {
-    // now that we know we have all inventories, we can update their assets too
-    this._version = body.version;
-  }
   
   if (ready)
     this.emit('ready');
