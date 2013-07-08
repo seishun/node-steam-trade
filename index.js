@@ -72,6 +72,13 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
             return;
           }
           
+          var script = body.match(/(var oItem;[\s\S]*)<\/script>/);
+          if (!script) {
+            // no session
+            callback();
+            return;
+          }
+          
           var items = [];
           
           // prepare to execute the script in the page
@@ -86,7 +93,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
           }
           
           // evil magic happens here
-          eval(body.match(/(var oItem;[\s\S]*)<\/script>/)[1]);
+          eval(script[1]);
           
           callback(items);
         });
