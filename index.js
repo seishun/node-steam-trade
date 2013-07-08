@@ -345,9 +345,13 @@ SteamTrade.prototype.confirm = function(callback) {
 };
 
 SteamTrade.prototype.cancel = function(callback) {
-  this._send('cancel', {}, callback);
-  // stop polling
-  delete this.tradePartnerSteamID;
+  this._send('cancel', {}, function(res) {
+    if (res.success) {
+      // stop polling
+      delete this.tradePartnerSteamID;
+    }
+    callback && callback(res);
+  }.bind(this));
 };
 
 SteamTrade.prototype.chatMsg = function(msg, callback) {
