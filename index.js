@@ -248,6 +248,11 @@ SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
       this.loadInventory(appid, contextid, callback);
       return;
     }
+    if (typeof body != 'object') {
+      // no session
+      callback();
+      return;
+    }
     callback(mergeWithDescriptions(body.rgInventory, body.rgDescriptions, contextid)
       .concat(mergeWithDescriptions(body.rgCurrency, body.rgDescriptions, contextid)));
   }.bind(this));
