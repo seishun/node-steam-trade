@@ -173,8 +173,13 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
     this._nextLogPos = ++i;
   
   if (body.newversion) {
-    // now that we know we have all inventories, we can update their assets too
-    this._themAssets = body.them.assets;
+    // now that we know we have all inventories, we can update their assets too and normalize it
+    this._themAssets = new Array();
+    if( body.them.assets instanceof Array || body.them.assets instanceof Object )
+    {
+      for( var key in body.them.assets )
+        this._themAssets.push( body.them.assets[ key ] );
+    }
     this._version = body.version;
   }
   
@@ -272,9 +277,18 @@ function mergeWithDescriptions(items, descriptions, contextid) {
 }
 
 SteamTrade.prototype.themAssets = function() {
-  return this._themAssets.map(function(item) {
-    return this._themInventories[item.appid][item.contextid][item.assetid];
-  }.bind(this));
+  var self = this;
+  var themAssets = new Array();
+  this._themAssets.forEach( function( item, index ) {
+    if( self._themInventories && self._themInventories[ item.appid ] && self._themInventories[ item.appid ][ item.contextid ] && self._themInventories[ item.appid ][ item.contextid ][ item.assetid ] )
+    {
+      self._themInventories[ item.appid ][ item.contextid ][ item.assetid ].contextid = item.contextid;
+      themAssets.push( self._themInventories[ item.appid ][ item.contextid ][ item.assetid ] );
+    }
+    else
+      themAssets.push( item ); // better than nothing
+  });
+  return themAssets;
 };
 
 SteamTrade.prototype.addItems = function(items, callback) {
