@@ -239,7 +239,8 @@ SteamTrade.prototype.open = function(steamID, callback) {
 
 SteamTrade.prototype.getContexts = function(callback) {
   this.request.get('http://steamcommunity.com/trade/' + this.tradePartnerSteamID, function(error, response, body) {
-    callback(JSON.parse(body.match(/var g_rgAppContextData = (.*);/)[1]));
+    var appContextData = body.match(/var g_rgAppContextData = (.*);/);
+    callback(appContextData && JSON.parse(appContextData[1]));
   });
 };
 
