@@ -9,6 +9,7 @@ function SteamTrade() {
   
   this._j = request.jar();
   this._request = request.defaults({jar:this._j});
+  this._requestsInFlight = 0;
 }
 
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
@@ -196,6 +197,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
 
 SteamTrade.prototype._send = function(action, data, callback) {
   clearTimeout(this._timerTradePoll);
+  this._requestsInFlight++;
   
   data.sessionid = this.sessionID;
   
@@ -209,11 +211,6 @@ SteamTrade.prototype._send = function(action, data, callback) {
     form: data,
     json: true
   }, function(error, response, body) {
-    if (!self.tradePartnerSteamID) {
-      // trade is over already
-      return;
-    }
-    
     if (error || response.statusCode != 200) {
       self.emit('debug', 'sending ' + action + ': ' + (error || response.statusCode));
       // retry
@@ -221,8 +218,12 @@ SteamTrade.prototype._send = function(action, data, callback) {
       return;
     }
     
-    self._onTradeStatusUpdate(body, callback);
-    return;
+    // prevent duplicate events
+    if (!--self._requestsInFlight) {
+      self._onTradeStatusUpdate(body, callback);
+    } else if (callback) {
+      callback(body);
+    }
   });
 };
 
