@@ -7,14 +7,14 @@ require('util').inherits(SteamTrade, require('events').EventEmitter);
 function SteamTrade() {
   require('events').EventEmitter.call(this);
   
-  this.j = request.jar();
-  this.request = request.defaults({jar:this.j});
+  this._j = request.jar();
+  this._request = request.defaults({jar:this._j});
 }
 
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
   var self = this;
   
-  this.request.post({
+  this._request.post({
     uri: 'http://steamcommunity.com/trade/' + this.tradePartnerSteamID + '/foreigninventory',
     headers: {
       referer: 'http://steamcommunity.com/trade/1'
@@ -65,7 +65,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
     
     if (body.trade_status == 1) {
       this.emit('end', 'complete', function getItems(callback) {
-        self.request.get('http://steamcommunity.com/trade/' + body.tradeid + '/receipt/', function(error, response, body) {
+        self._request.get('http://steamcommunity.com/trade/' + body.tradeid + '/receipt/', function(error, response, body) {
           if (error || response.statusCode != 200) {
             self.emit('debug', 'Opening receipt page: ' + (error || response.statusCode));
             getItems(callback);
@@ -201,7 +201,7 @@ SteamTrade.prototype._send = function(action, data, callback) {
   
   var self = this;
   
-  this.request.post({
+  this._request.post({
     uri: 'http://steamcommunity.com/trade/' + this.tradePartnerSteamID + '/' + action,
     headers: {
       referer: 'http://steamcommunity.com/trade/1'
@@ -227,7 +227,7 @@ SteamTrade.prototype._send = function(action, data, callback) {
 };
 
 SteamTrade.prototype.setCookie = function(cookie) {
-  this.j.add(request.cookie(cookie));
+  this._j.add(request.cookie(cookie));
 };
 
 SteamTrade.prototype.open = function(steamID, callback) {
@@ -245,14 +245,14 @@ SteamTrade.prototype.open = function(steamID, callback) {
 };
 
 SteamTrade.prototype.getContexts = function(callback) {
-  this.request.get('http://steamcommunity.com/trade/' + this.tradePartnerSteamID, function(error, response, body) {
+  this._request.get('http://steamcommunity.com/trade/' + this.tradePartnerSteamID, function(error, response, body) {
     var appContextData = body.match(/var g_rgAppContextData = (.*);/);
     callback(appContextData && JSON.parse(appContextData[1]));
   });
 };
 
 SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
-  this.request.get({
+  this._request.get({
     uri: 'http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid,
     json: true
   }, function(error, response, body) {
