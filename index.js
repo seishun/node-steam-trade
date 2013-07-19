@@ -211,6 +211,8 @@ SteamTrade.prototype._send = function(action, data, callback) {
     form: data,
     json: true
   }, function(error, response, body) {
+    self._requestsInFlight--;
+    
     if (error || response.statusCode != 200) {
       self.emit('debug', 'sending ' + action + ': ' + (error || response.statusCode));
       // retry
@@ -219,7 +221,7 @@ SteamTrade.prototype._send = function(action, data, callback) {
     }
     
     // prevent duplicate events
-    if (!--self._requestsInFlight) {
+    if (!self._requestsInFlight) {
       self._onTradeStatusUpdate(body, callback);
     } else if (callback) {
       callback(body);
