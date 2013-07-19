@@ -19,7 +19,7 @@ var steamTrade = new SteamTrade();
 ...then do the following:
 
 * Set its `sessionID` property to a valid web session ID. In [node-steam](https://github.com/seishun/node-steam), you can use the `webSessionID` event to get it.
-* Call its `setCookie` method with each of your cookies. In node-steam, you can use the `webLogOn` method to get them. (Note: node-steam's `webLogOn` joins the cookies into a single string with a semicolon. You will have to split it and call `setCookie` with each separately.)
+* Call its `setCookie` method with each of your cookies. In node-steam, you can use the `webLogOn` method to get them.
 
 Do not make multiple method calls in the same tick (e.g. `trade.addItems(items); trade.ready();`) - instead, make the second call in the callback provided to the first one (`trade.addItems(items, function(res) {trade.ready();});`). The callback will be passed the parsed JSON response from Steam (`res` in the example). You can use it for error checking: if something went wrong, `res.success` will be `false` and `res.error` should be a human-readable string. 
 
