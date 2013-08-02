@@ -63,6 +63,9 @@ Presses the big green "Make Trade" button. Will silently fail if either side is 
 ## cancel([callback])
 Cancels the trade. Stops polling if succeeds, so no 'end' event will be emitted.
 
+## chatMsg(msg, [callback])
+Sends a trade chat message.
+
 
 # Events
 
