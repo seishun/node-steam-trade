@@ -1,7 +1,39 @@
 {
+  "author": {
+    "name": "seishun",
+    "email": "vvnicholas@gmail.com",
+    "url": "https://github.com/seishun/"
+  },
   "name": "steam-trade",
   "version": "0.2.0",
+  "description": "Node.js wrapper around Steam trading",
+  "keywords": [
+    "steam",
+    "trade"
+  ],
+  "homepage": "https://github.com/seishun/node-steam-trade",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/seishun/node-steam-trade.git"
+  },
+  "contributors": [
+    {
+      "name": "W Nicholas",
+      "email": "vvnicholas@gmail.com",
+      "url": "https://github.com/seishun/"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/seishun/node-steam-trade/issues"
+  },
+  "main": "./index.js",
   "dependencies": {
     "request": "*"
   }
+  "devDependencies": {},
+  "scripts": {},
+  "readme": "# Steam trading for Node.js\r\n\r\nAllows you to automate Steam trading in Node.js.\r\n\r\n# Installation\r\n\r\n```\r\nnpm install git://github.com/seishun/node-steam-trade.git\r\n```\r\n\r\n# Usage\r\nInstantiate a SteamTrade object...\r\n\r\n```js\r\nvar SteamTrade = require('steam-trade');\r\nvar steamTrade = new SteamTrade();\r\n```\r\n\r\n...then do the following:\r\n\r\n* Set its `sessionID` property to a valid web session ID. In [node-steam](https://github.com/seishun/node-steam), you can use the `webSessionID` event to get it.\r\n* Call its `setCookie` method with each of your cookies. In node-steam, you can use the `webLogOn` method to get them.\r\n\r\nDo not make multiple method calls in the same tick (e.g. `trade.addItems(items); trade.ready();`) - instead, make the second call in the callback provided to the first one (`trade.addItems(items, function(res) {trade.ready();});`). The callback will be passed the parsed JSON response from Steam (`res` in the example). You can use it for error checking: if something went wrong, `res.success` will be `false` and `res.error` should be a human-readable string. \r\n\r\n\r\n# Properties\r\n\r\n## themAssets\r\nAn array of the other party's offered items. The order of items in the array corresponds to their order in the trade window, but empty spaces are not preserved.\r\n\r\n## tradePartnerSteamID\r\nYour trade partner's SteamID if a trade is ongoing or was interrupted (see ['error' event](#error)), otherwise a falsy value.\r\n\r\n# Methods\r\n\r\n## open(steamID, callback)\r\nInitializes a trade with the specified SteamID. The trade handshake must have completed at this point - in node-steam, listen for a `sessionStarted` event. Don't use any other methods until you've opened a trade. Use `callback` if you want to add some items immediately after opening the trade.\r\n\r\n## loadInventory(appid, contextid, callback)\r\nLoads your library for the given app and context. For example, use 440 and 2 for TF2 and 570 and 2 for Dota2. The first argument to `callback` will be an array of item objects in case of success, otherwise a falsy value. Failure suggests that your cookie has expired (see ['error' event](#error)).\r\n\r\n## getContexts(callback)\r\nGets the list of available contexts. The first argument to `callback` will be an object extracted directly from the trading page in case of success, otherwise a falsy value. Failure suggests that your cookie has expired (see ['error' event](#error)).\r\n\r\n## addItems(items, [callback])\r\nAdds the specified items from your inventory. `items` must be an array. Create an array of a single item if you only want to add one item. If any of the items are stackable (Spiral Knights crap), it will add the whole available amount. If want to add a certain amount, modify the item's `amount` property.\r\n\r\n`callback` will be called once all the items have been added. It will be provided an array of responses - one for each added item, in the same order.\r\n\r\n## removeItem(item, [callback])\r\nRemoves a single item from the trade.\r\n\r\n## ready([callback])\r\nPresses the big blue \"ready\" button. Again, use the callback if you want to confirm as well.\r\n\r\n## unready([callback])\r\nUnpresses the \"ready\" button.\r\n\r\n## confirm([callback])\r\nPresses the big green \"Make Trade\" button. Will silently fail if either side is not ready.\r\n\r\n## cancel([callback])\r\nCancels the trade. Stops polling if succeeds, so no 'end' event will be emitted.\r\n\r\n## chatMsg(msg, [callback])\r\nSends a trade chat message.\r\n\r\n\r\n# Events\r\n\r\n## 'error'\r\n* `e` - an `Error` object\r\n\r\nnode-steam-trade has received a bad response while polling, assumed that your cookie has expired, and stopped polling. A possible cause is that you logged into this account from a browser on another computer.\r\n\r\nRefresh your web session (`webLogOn` in node-steam), call `setCookie` with the new cookies, then resume polling by reopening the trade (just call `trade.open(trade.tradePartnerSteamID)` and the existing trade will continue).\r\n\r\n## 'end'\r\n* 'complete', 'empty' (no items on either side), 'cancelled', 'timeout' or 'failed' \r\n* in case of 'complete', a `getItems` function\r\n\r\nTrade is closed. If you want to get the list of received items, call `getItems` with a callback. The first argument to the callback will be an array of items in case of success, otherwise a falsy value. Failure suggests that your cookie has expired (see ['error' event](#error)).\r\n\r\n```js\r\ntrade.on('end', function(status, getItems) {\r\n  if (status == 'complete') {\r\n    getItems(function(items) {\r\n      console.log(items);\r\n    });\r\n  }\r\n});\r\n```\r\n\r\n## 'offerChanged'\r\n* `true` if an item was added, `false` if removed\r\n* the item object\r\n\r\nThe [`themAssets` property](#themassets) will be updated on the next tick.\r\n\r\n## 'ready'\r\nThe other side has pressed the big blue \"ready\" button.\r\n\r\n## 'unready'\r\nThe other side has changed their mind.\r\n\r\n## 'chatMsg'\r\nThey said something in the trade chat.",
+  "readmeFilename": "README.md",
+  "_id": "steam-trade@0.2.0",
+  "_from": "steam-trade@"
 }
