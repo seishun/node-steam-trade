@@ -9,6 +9,8 @@ function SteamTrade() {
   
   this._j = request.jar();
   this._request = request.defaults({jar:this._j});
+  // make slots global to prevent using already used slot
+  this._slots = [];
 }
 
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
@@ -286,21 +288,18 @@ function mergeWithDescriptions(items, descriptions, contextid) {
 
 SteamTrade.prototype.addItems = function(items, callback) {
   var count = items.length;
-  var slot = 0;
   var results = [];
   
   items.forEach(function(item, index) {
-    // find first free slot
-    for (; this._meAssets && slot in this._meAssets; slot++);
+  	// reserve slot
+  	this._slots.push(true);
     
     this._send(item.is_currency ? 'setcurrency' : 'additem', {
       appid: item.appid,
       contextid: item.contextid,
-      
       itemid: item.id,
       currencyid: item.id,
-      
-      slot: slot++, // it's taken tentatively
+      slot: this._slots.length - 1, // slots are zero based, so minus 1
       amount: item.amount
     }, function(res) {
       results[index] = res;
@@ -311,7 +310,27 @@ SteamTrade.prototype.addItems = function(items, callback) {
   }.bind(this));
 };
 
+SteamTrade.prototype.removeItems = function(items, callback) {
+  var count = items.length;
+  var results = [];
+  
+  items.forEach(function(item, index) {
+  	this._slots.pop();
+    this._send('removeitem', {
+      appid: item.appid,
+      contextid: item.contextid,
+      itemid: item.id,
+    }, function(res) {
+      results[index] = res;
+      if (!--count) {
+        callback && callback(results);
+      }
+    });
+  }.bind(this));
+};
+
 SteamTrade.prototype.removeItem = function(item, callback) {
+  this._slots.pop();
   this._send('removeitem', {
     appid: item.appid,
     contextid: item.contextid,
