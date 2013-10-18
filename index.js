@@ -293,6 +293,8 @@ SteamTrade.prototype.addItems = function(items, callback) {
     // find first free slot
     for (; slot in this._meAssets; slot++);
     
+    this._meAssets[slot] = item; // prevent using this slot at least until the next version
+    
     this._send(item.is_currency ? 'setcurrency' : 'additem', {
       appid: item.appid,
       contextid: item.contextid,
