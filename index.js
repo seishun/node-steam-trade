@@ -129,7 +129,7 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
   
   if (body.newversion)
     // we can update our own assets safely
-    this._meAssets = body.me.assets;
+    this._meAssets = body.me.assets || []; // Valve uses '' to denote an empty array
   
   if (callback) {
     // callback now, otherwise we might return (loading inventory) and never get there
@@ -291,7 +291,7 @@ SteamTrade.prototype.addItems = function(items, callback) {
   
   items.forEach(function(item, index) {
     // find first free slot
-    for (; this._meAssets && slot in this._meAssets; slot++);
+    for (; slot in this._meAssets; slot++);
     
     this._send(item.is_currency ? 'setcurrency' : 'additem', {
       appid: item.appid,
