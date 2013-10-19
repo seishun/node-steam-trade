@@ -284,6 +284,24 @@ function mergeWithDescriptions(items, descriptions, contextid) {
   });
 }
 
+SteamTrade.prototype.addItem = function(item, callback) {
+  // find first free slot
+  for (var slot = 0; slot in this._meAssets; slot++);
+  
+  this._meAssets[slot] = item; // prevent using this slot at least until the next version
+  
+  this._send(item.is_currency ? 'setcurrency' : 'additem', {
+    appid: item.appid,
+    contextid: item.contextid,
+    
+    itemid: item.id,
+    currencyid: item.id,
+    
+    slot: slot,
+    amount: item.amount
+  }, callback);
+};
+
 SteamTrade.prototype.addItems = function(items, callback) {
   var count = items.length;
   var slot = 0;
