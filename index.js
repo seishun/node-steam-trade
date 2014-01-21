@@ -256,18 +256,13 @@ SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
     uri: 'http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid,
     json: true
   }, function(error, response, body) {
-    if (error || response.statusCode != 200) {
+    if (error || response.statusCode != 200 || !body.rgInventory || !body.rgCurrency) {
       this.emit('debug', 'loading my inventory: ' + (error || response.statusCode));
       this.loadInventory(appid, contextid, callback);
       return;
     }
     if (typeof body != 'object') {
       // no session
-      callback();
-      return;
-    }
-    if (!body.rgInventory || !body.rgCurrency) {
-      // inventory is down
       callback();
       return;
     }
