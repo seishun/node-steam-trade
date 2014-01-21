@@ -266,6 +266,11 @@ SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
       callback();
       return;
     }
+    if (!body.rgInventory || !body.rgCurrency) {
+      // inventory is down
+      callback();
+      return;
+    }
     callback(mergeWithDescriptions(body.rgInventory, body.rgDescriptions, contextid)
       .concat(mergeWithDescriptions(body.rgCurrency, body.rgDescriptions, contextid)));
   }.bind(this));
