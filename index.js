@@ -256,8 +256,8 @@ SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
     uri: 'http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid,
     json: true
   }, function(error, response, body) {
-    if (error || response.statusCode != 200) {
-      this.emit('debug', 'loading my inventory: ' + (error || response.statusCode));
+    if (error || response.statusCode != 200 || JSON.stringify(body) == '{}') { // the latter happens when GC is down
+      this.emit('debug', 'loading my inventory: ' + (error || response.statusCode != 200 ? response.statusCode : '{}'));
       this.loadInventory(appid, contextid, callback);
       return;
     }
