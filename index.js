@@ -227,7 +227,7 @@ SteamTrade.prototype._send = function(action, data, callback) {
 };
 
 SteamTrade.prototype.setCookie = function(cookie) {
-  this._j.add(request.cookie(cookie));
+  this._j.setCookie(request.cookie(cookie), 'http://steamcommunity.com');
 };
 
 SteamTrade.prototype.open = function(steamID, callback) {
