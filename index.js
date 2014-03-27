@@ -14,16 +14,15 @@ function SteamTrade() {
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
   var self = this;
   
-  this._request.post({
-    uri: 'http://steamcommunity.com/trade/' + this.tradePartnerSteamID + '/foreigninventory',
-    headers: {
-      referer: 'http://steamcommunity.com/trade/1'
-    },
-    form: {
+  this._request.get({
+    uri: 'http://steamcommunity.com/trade/' + this.tradePartnerSteamID + '/foreigninventory?' + require('querystring').stringify({
       sessionid: this.sessionID,
       steamid: this.tradePartnerSteamID,
       appid: appid,
       contextid: contextid
+    }),
+    headers: {
+      referer: 'http://steamcommunity.com/trade/1'
     },
     json: true
   }, function(error, response, body) {
