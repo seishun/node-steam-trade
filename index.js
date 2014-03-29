@@ -12,6 +12,13 @@ function SteamTrade() {
 }
 
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
+  if (!this._themInventories[appid]) {
+    this._themInventories[appid] = {};
+  }
+  if (!this._themInventories[appid][contextid]) {
+    this._themInventories[appid][contextid] = {};
+  }
+  
   var self = this;
   
   this._request.get({
@@ -25,7 +32,7 @@ SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
       referer: 'http://steamcommunity.com/trade/1'
     },
     json: true
-  }, function(error, response, body) {
+  }, function continueFullInventoryRequestIfNecessary(error, response, body) {
     if (error) {
       self.emit('debug', 'loading inventory: ' + error);
       // retry
@@ -34,17 +41,30 @@ SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
     }
     
     for (var id in body.rgInventory) {
-      var item = body.rgInventory[id];
+      var item = self._themInventories[appid][contextid][id] = body.rgInventory[id];
       var description = body.rgDescriptions[item.classid + '_' + item.instanceid];
       for (var key in description) {
         item[key] = description[key];
       }
     }
     
-    if (!self._themInventories[appid]) {
-      self._themInventories[appid] = {};
+    if (body.more) {
+      self.emit('debug', 'loading inventory: continuing from ' + body.more_start);
+      self._request.get({
+        uri: 'http://steamcommunity.com/trade/' + self.tradePartnerSteamID + '/foreigninventory?' + require('querystring').stringify({
+          sessionid: self.sessionID,
+          steamid: self.tradePartnerSteamID,
+          appid: appid,
+          contextid: contextid,
+          start: body.more_start
+        }),
+        headers: {
+          referer: 'http://steamcommunity.com/trade/1'
+        },
+        json: true
+      }, continueFullInventoryRequestIfNecessary);
+      return;
     }
-    self._themInventories[appid][contextid] = body.rgInventory;
     
     self._loadingInventoryData = false;
   });
@@ -251,10 +271,12 @@ SteamTrade.prototype.getContexts = function(callback) {
 };
 
 SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
+  var inventory = [];
+  
   this._request.get({
     uri: 'http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid,
     json: true
-  }, function(error, response, body) {
+  }, function continueFullInventoryRequestIfNecessary(error, response, body) {
     if (error || response.statusCode != 200 || JSON.stringify(body) == '{}') { // the latter happens when GC is down
       this.emit('debug', 'loading my inventory: ' + (error || response.statusCode != 200 ? response.statusCode : '{}'));
       this.loadInventory(appid, contextid, callback);
@@ -265,8 +287,18 @@ SteamTrade.prototype.loadInventory = function(appid, contextid, callback) {
       callback();
       return;
     }
-    callback(mergeWithDescriptions(body.rgInventory, body.rgDescriptions, contextid)
-      .concat(mergeWithDescriptions(body.rgCurrency, body.rgDescriptions, contextid)));
+    inventory = inventory
+      .concat(mergeWithDescriptions(body.rgInventory, body.rgDescriptions, contextid))
+      .concat(mergeWithDescriptions(body.rgCurrency, body.rgDescriptions, contextid));
+    if (body.more) {
+      this.emit('debug', 'loading my inventory: continuing from ' + body.more_start);
+      this._request.get({
+        uri: 'http://steamcommunity.com/my/inventory/json/' + appid + '/' + contextid + '?start=' + body.more_start,
+        json: true
+      }, continueFullInventoryRequestIfNecessary.bind(this));
+    } else {
+      callback(inventory);
+    }
   }.bind(this));
 };
 
