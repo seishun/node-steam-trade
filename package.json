@@ -2,6 +2,6 @@
   "name": "steam-trade",
   "version": "0.2.2",
   "dependencies": {
-    "request": ">=2.33.0"
+    "request": "~2.33.0"
   }
 }
