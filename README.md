@@ -111,5 +111,8 @@ The other side has pressed the big blue "ready" button.
 ### 'unready'
 The other side has changed their mind.
 
+### 'confirm'
+The other side has pressed the big green "Make Trade" button.
+
 ### 'chatMsg'
 They said something in the trade chat.
