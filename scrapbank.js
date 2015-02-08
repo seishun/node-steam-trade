@@ -1,7 +1,13 @@
-var username = '';
-var password = '';
-var steamGuard = require('fs').existsSync('sentry') ? require('fs').readFileSync('sentry')
-    : ''; // code received by email
+var logOnDetails = {
+  accountName: '',
+  password: ''
+};
+
+if (require('fs').existsSync('sentry'))
+  logOnDetails.shaSentryfile = require('fs').readFileSync('sentry');
+
+// logOnDetails.authCode = ''; // code received by email
+
 var admin = ''; // put your steamid here to say 'give' to the bot and receive all non-scrap items
 
 
@@ -11,7 +17,7 @@ var SteamTrade = require('./'); // change to 'steam-trade' if not running from t
 var steam = new Steam.SteamClient();
 var steamTrade = new SteamTrade();
 
-steam.logOn(username, password, steamGuard);
+steam.logOn(logOnDetails);
 
 steam.on('debug', console.log);
 
@@ -25,7 +31,7 @@ steam.on('webSessionID', function(sessionID) {
   steamTrade.sessionID = sessionID;
   steam.webLogOn(function(cookies) {
     console.log('got a new cookie:', cookies);
-    cookies.split(';').forEach(function(cookie) {
+    cookies.forEach(function(cookie) {
         steamTrade.setCookie(cookie);
     });
   });
