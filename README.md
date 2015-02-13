@@ -84,8 +84,8 @@ node-steam-trade has received a bad response while polling, assumed that your co
 Refresh your web session (`webLogOn` in node-steam), call `setCookie` with the new cookies, then resume polling by reopening the trade (just call `trade.open(trade.tradePartnerSteamID)` and the existing trade will continue).
 
 ### 'end'
-* 'complete', 'empty' (no items on either side), 'cancelled', 'timeout' or 'failed' 
-* in case of 'complete', a `getItems` function
+* 'complete', 'empty' (no items on either side), 'cancelled', 'timeout', 'failed' or 'pending' (trade turned into a trade offer)
+* in case of 'complete', a `getItems` function; in case of 'pending', trade offer ID
 
 Trade is closed. If you want to get the list of received items, call `getItems` with a callback. The first argument to the callback will be an array of items in case of success, otherwise a falsy value. Failure implies that your cookie has expired (see ['error' event](#error)).
 

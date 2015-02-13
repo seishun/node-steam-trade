@@ -123,7 +123,8 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
         3: 'cancelled',
         4: 'timeout',
         5: 'failed',
-      }[body.trade_status]);
+        6: 'pending',
+      }[body.trade_status], body.tradeid);
     }
     
     delete this.tradePartnerSteamID;
