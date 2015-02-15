@@ -192,6 +192,9 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
         ready = false;
         this.emit('unready');
         break;
+      case '4':
+        this.emit('confirm');
+        break;
       case '7':
         this.emit('chatMsg', event.text);
     }
