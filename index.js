@@ -205,7 +205,9 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
     // it can be '', [item, item], or {'1': item, '3': item}
     this.themAssets = body.them.assets ? Object.keys(body.them.assets).map(function(key) {
       var item = body.them.assets[key];
-      return self._themInventories[item.appid][item.contextid][item.assetid];
+      var invItem = self._themInventories[item.appid][item.contextid][item.assetid];
+      invItem.amount = item.amount;
+      return invItem;
     }) : [];
     this._version = body.version;
   }
