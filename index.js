@@ -14,9 +14,11 @@ function SteamTrade() {
 SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
   if (!this._themInventories[appid]) {
     this._themInventories[appid] = {};
+    this._themCurrencies[appid] = {};
   }
   if (!this._themInventories[appid][contextid]) {
     this._themInventories[appid][contextid] = {};
+    this._themCurrencies[appid][contextid] = {};
   }
   
   var self = this;
@@ -43,6 +45,14 @@ SteamTrade.prototype._loadForeignInventory = function(appid, contextid) {
     for (var id in body.rgInventory) {
       var item = self._themInventories[appid][contextid][id] = body.rgInventory[id];
       var description = body.rgDescriptions[item.classid + '_' + item.instanceid];
+      for (var key in description) {
+        item[key] = description[key];
+      }
+    }
+    
+    for (var id in body.rgCurrency) {
+      item = self._themCurrencies[appid][contextid][id] = body.rgCurrency[id];
+      description = body.rgDescriptions[item.classid + '_0'];
       for (var key in description) {
         item[key] = description[key];
       }
@@ -192,6 +202,15 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
         ready = false;
         this.emit('unready');
         break;
+      case '6':
+        var currency = this._themCurrencies[event.appid] && this._themCurrencies[event.appid][event.contextid];
+        if (!currency) {
+          this._loadForeignInventory(event.appid, event.contextid);
+          this._loadingInventoryData = true;
+          return;
+        }
+        this.emit('currencyChanged', event.old_amount, event.amount, currency[event.currencyid]);
+        break;
       case '7':
         this.emit('chatMsg', event.text);
     }
@@ -206,6 +225,12 @@ SteamTrade.prototype._onTradeStatusUpdate = function(body, callback) {
     this.themAssets = body.them.assets ? Object.keys(body.them.assets).map(function(key) {
       var item = body.them.assets[key];
       var invItem = self._themInventories[item.appid][item.contextid][item.assetid];
+      invItem.amount = item.amount;
+      return invItem;
+    }) : [];
+    this.themCurrency = body.them.currency ? Object.keys(body.them.currency).map(function(key) {
+      var item = body.them.currency[key];
+      var invItem = self._themCurrencies[item.appid][item.contextid][item.currencyid];
       invItem.amount = item.amount;
       return invItem;
     }) : [];
@@ -255,7 +280,9 @@ SteamTrade.prototype.setCookie = function(cookie) {
 SteamTrade.prototype.open = function(steamID, callback) {
   this.tradePartnerSteamID = steamID;
   this.themAssets = [];
+  this.themCurrency = [];
   this._themInventories = {};
+  this._themCurrencies = {};
   this._meAssets = [];
   this._nextLogPos = 0;
   this._version = 1;

@@ -28,6 +28,9 @@ Must be a valid web session ID. You can either log into steamcommunity.com manua
 ### themAssets
 An array of the other party's offered items. The order of items in the array corresponds to their order in the trade window, but empty spaces are not preserved.
 
+### themCurrency
+An array of the other party's offered currencies.
+
 ### tradePartnerSteamID
 Your trade partner's SteamID if a trade is ongoing or was interrupted (see ['error' event](#error)), otherwise a falsy value.
 
@@ -104,6 +107,13 @@ trade.on('end', function(status, getItems) {
 * the item object
 
 The [`themAssets` property](#themassets) will be updated on the next tick.
+
+### 'currencyChanged'
+* old amount
+* new amount
+* the currency object
+
+The [`themCurrency` property](#themcurrency) will be updated on the next tick.
 
 ### 'ready'
 The other side has pressed the big blue "ready" button.
