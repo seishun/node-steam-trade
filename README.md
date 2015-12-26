@@ -5,7 +5,7 @@ Allows you to automate Steam trading in Node.js.
 # Installation
 
 ```
-npm install git://github.com/seishun/node-steam-trade.git
+npm install steam-trade
 ```
 
 # Usage
