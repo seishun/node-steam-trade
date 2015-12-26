@@ -23,7 +23,7 @@ Unless specified otherwise, callbacks receive the parsed JSON response from Stea
 ## Properties
 
 ### sessionID
-Must be a valid web session ID. You can either log into steamcommunity.com manually and use the value of the "sessionid" cookie, or, if using [node-steam](https://github.com/seishun/node-steam), listen for its ['webSessionID'](https://github.com/seishun/node-steam#websessionid) event.
+Must match the value of the "sessionid" cookie.
 
 ### themAssets
 An array of the other party's offered items. The order of items in the array corresponds to their order in the trade window, but empty spaces are not preserved.
@@ -34,7 +34,7 @@ Your trade partner's SteamID if a trade is ongoing or was interrupted (see ['err
 ## Methods
 
 ### setCookie(cookie)
-Sets a cookie that must be in the "name=value" form. SteamTrade needs the "steamLogin" and "sessionid" cookies to operate. You can either log into steamcommunity.com manually, or, if using node-steam, use its [webLogOn](https://github.com/seishun/node-steam#weblogoncallback) method to get both cookies in the required form.
+Sets a cookie that must be in the "name=value" form. SteamTrade needs the "steamLogin" and "sessionid" cookies to operate. You can either log into steamcommunity.com manually, or, if using node-steam, use the WebAPI's AuthenticateUser method.
 
 ### loadInventory(appid, contextid, callback)
 Loads your inventory for the given app and context. For example, use 440 and 2 for TF2, or 570 and 2 for Dota 2. The specified inventory must already exist for this account, use [getContexts](#getcontextscallback) if you need to check it at runtime. The first argument to `callback` will be an array of item objects in case of success, otherwise a falsy value. Failure implies that your cookie has expired (see ['error' event](#error)).
@@ -81,7 +81,7 @@ Sends a trade chat message.
 
 node-steam-trade has received a bad response while polling, assumed that your cookie has expired, and stopped polling. A possible cause is that you logged into this account from a browser on another computer.
 
-Refresh your web session (`webLogOn` in node-steam), call `setCookie` with the new cookies, then resume polling by reopening the trade (just call `trade.open(trade.tradePartnerSteamID)` and the existing trade will continue).
+Refresh your web session, call `setCookie` with the new cookies, then resume polling by reopening the trade (just call `trade.open(trade.tradePartnerSteamID)` and the existing trade will continue).
 
 ### 'end'
 * 'complete', 'empty' (no items on either side), 'cancelled', 'timeout', 'failed' or 'pending' (trade turned into a trade offer)
