@@ -5,8 +5,8 @@ var logOnDetails = {
 
 try {
   var sha1 = require('crypto').createHash('sha1');
-  sha1.end();
-  logOnDetails.sha_sentryfile = require('fs').readFileSync('sentry');
+  sha1.end(require('fs').readFileSync('sentry'));
+  logOnDetails.sha_sentryfile = sha1.read();
 } catch (e) {}
 
 // logOnDetails.auth_code = ''; // code received by email
